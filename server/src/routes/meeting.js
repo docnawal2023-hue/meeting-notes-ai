@@ -6,6 +6,13 @@ const auth = require("../middleware/auth");
 const path = require("path");
 const { upload, MAX_MB } = require("../middleware/upload");
 const { processMeeting } = require("../services/pipeline");
+const {
+  cleanString,
+  parseDate,
+  parseEmail,
+  escapeRegex,
+  httpError,
+} = require("../../utils/validators");
 
 const router = express.Router();
 
@@ -66,12 +73,66 @@ router.post(
   }
 );
 // GET /api/meetings  -> my meetings, newest first
+const STATUSES = ["uploaded", "transcribing", "analyzing", "done", "failed"];
+
+// Short piece of text around the match, to show in search results
+function makeSnippet(meeting, query) {
+  const needle = query.toLowerCase();
+  for (const text of [meeting.fullText, meeting.summary, meeting.title]) {
+    if (!text) continue;
+    const i = text.toLowerCase().indexOf(needle);
+    if (i !== -1) {
+      const start = Math.max(0, i - 60);
+      const end = Math.min(text.length, i + needle.length + 60);
+      return (
+        (start > 0 ? "…" : "") +
+        text.slice(start, end).trim() +
+        (end < text.length ? "…" : "")
+      );
+    }
+  }
+  return null;
+}
+
+// GET /api/meetings?search=&status=&page=&limit=
 router.get("/", async (req, res, next) => {
   try {
-    const meetings = await Meeting.find({ userId: req.user._id })
-      .select("-transcript -fullText") // keep the list light
-      .sort({ createdAt: -1 });
-    res.json({ meetings });
+    const filter = { userId: req.user._id };
+
+    if (STATUSES.includes(req.query.status)) {
+      filter.status = req.query.status;
+    }
+
+    const q = (req.query.search || "").trim().slice(0, 100);
+    if (q) {
+      const rx = new RegExp(escapeRegex(q), "i");
+      filter.$or = [{ title: rx }, { summary: rx }, { fullText: rx }, { decisions: rx }];
+    }
+
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+
+    // fullText is only needed to build search snippets
+    const hidden = q ? "-transcript -audioPath" : "-transcript -fullText -audioPath";
+
+    const [meetings, total] = await Promise.all([
+      Meeting.find(filter)
+        .select(hidden)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Meeting.countDocuments(filter),
+    ]);
+
+    if (q) {
+      meetings.forEach((m) => {
+        m.snippet = makeSnippet(m, q);
+        delete m.fullText;
+      });
+    }
+
+    res.json({ meetings, total, page, pages: Math.ceil(total / limit) });
   } catch (err) {
     next(err);
   }

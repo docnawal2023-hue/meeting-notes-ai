@@ -12,7 +12,8 @@ app.use(express.json());
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/meetings", require("./routes/meeting"));
-
+app.use("/api/meetings", require("./routes/meetingExtras"));
+app.use("/api/action-items", require("./routes/actionItems"));
 app.use(notFound);
 app.use(errorHandler); // must be last
 

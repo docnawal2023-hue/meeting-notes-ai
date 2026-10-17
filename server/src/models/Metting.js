@@ -38,7 +38,17 @@ const meetingSchema = new mongoose.Schema(
     summary: String,
     decisions: [String],
   },
-  { timestamps: true }
+    {
+    timestamps: true,
+    toJSON: {
+      flattenMaps: true,
+      transform: (doc, ret) => {
+        delete ret.audioPath; // never expose server file paths
+        return ret;
+      },
+    },
+    toObject: { flattenMaps: true },
+  }
 );
 
 // Powers the search feature later
