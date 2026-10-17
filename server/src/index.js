@@ -1,20 +1,26 @@
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const connectDB = require("./config/db");
+const { notFound, errorHandler } = require("./middleware/errorHandle");
 
 const app = express();
-app.use(cors());
+
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/meetings", require("./routes/meeting"));
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(process.env.PORT, () =>
-      console.log(`Server running on port ${process.env.PORT}`)
-    );
-  })
-  .catch((err) => console.error("DB connection failed:", err.message));
+app.use(notFound);
+app.use(errorHandler); // must be last
+
+const PORT = process.env.PORT || 5000;
+
+connectDB()
+  .then(() => app.listen(PORT, () => console.log(`Server running on port ${PORT}`)))
+  .catch((err) => {
+    console.error("DB connection failed:", err.message);
+    process.exit(1);
+  });
