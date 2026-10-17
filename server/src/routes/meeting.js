@@ -3,11 +3,15 @@ const mongoose = require("mongoose");
 const Meeting = require("../models/Metting");
 const ActionItem = require("../models/ActionItem");
 const auth = require("../middleware/auth");
+const path = require("path");
+const { upload, MAX_MB } = require("../middleware/upload");
+const { processMeeting } = require("../services/pipeline");
 
 const router = express.Router();
 
 // Every route in this file requires login
 router.use(auth);
+
 
 // Reject bad ids early
 function checkId(req, res, next) {
@@ -16,7 +20,51 @@ function checkId(req, res, next) {
   }
   next();
 }
+// POST /api/meetings/upload  (form-data: audio, title, date)
+router.post(
+  "/upload",
+  (req, res, next) => {
+    upload.single("audio")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ message: `File is too large (max ${MAX_MB} MB)` });
+        }
+        return res.status(400).json({ message: err.message });
+      }
+      next();
+    });
+  },
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No audio file received (field name must be 'audio')" });
+      }
 
+      const title =
+        (req.body.title || "").trim() || path.parse(req.file.originalname).name;
+
+      let date = req.body.date ? new Date(req.body.date) : new Date();
+      if (Number.isNaN(date.getTime())) date = new Date();
+
+      const meeting = await Meeting.create({
+        userId: req.user._id,
+        title,
+        date,
+        audioPath: req.file.path,
+        originalFileName: req.file.originalname,
+      });
+
+      // Start in the background. Do NOT await, so the user gets a reply now.
+      processMeeting(meeting._id).catch((err) =>
+        console.error("Pipeline crashed:", err)
+      );
+
+      res.status(202).json({ meeting });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 // GET /api/meetings  -> my meetings, newest first
 router.get("/", async (req, res, next) => {
   try {
