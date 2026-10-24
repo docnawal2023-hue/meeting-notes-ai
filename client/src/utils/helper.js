@@ -32,3 +32,23 @@ export function todayLocal() {
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 10);
 }
+// Meeting dates are saved as midnight UTC, so we show them in UTC too.
+// Otherwise users west of UTC would see the day before.
+export function formatMeetingDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+// 45 -> "45 sec", 300 -> "5 min", 4500 -> "1 h 15 min"
+export function formatDuration(seconds) {
+  if (!seconds) return "";
+  if (seconds < 60) return `${Math.round(seconds)} sec`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}

@@ -19,6 +19,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/upload" element={<Upload/>} />
+          <Route path="/meetings/:id" element={<ComingSoon title="Meeting details" />} />
           <Route path="/tasks" element={<ComingSoon title="Tasks" />} />
         </Route>
       </Route>
