@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ComingSoon from "./pages/ComingSoon";
+import MeetingDetail from "./pages/MeetingDetail";
 import Upload from "./pages/Upload";
 
 export default function App() {
@@ -19,7 +20,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/upload" element={<Upload/>} />
-          <Route path="/meetings/:id" element={<ComingSoon title="Meeting details" />} />
+          <Route path="/meetings/:id" element={<MeetingDetail title="Meeting details" />} />
           <Route path="/tasks" element={<ComingSoon title="Tasks" />} />
         </Route>
       </Route>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import api, { getErrorMessage } from "../api";
 import Spinner from "../components/Spinner";
-import StatusBadge from "../components/StautusBadge";
+import StautusBadge from "../components/StautusBadge";
 import ConfirmDialog from "../components/ConfirmDialog";
 import useDebounce from "../hooks/useDebounce";
 import { formatDuration, formatMeetingDate } from "../utils/helper";
@@ -38,7 +38,7 @@ function MeetingRow({ m, busy, onRetry, onDelete }) {
             {m.duration ? ` · ${formatDuration(m.duration)}` : ""}
           </p>
         </div>
-        <StatusBadge status={m.status} />
+        <StautusBadge status={m.status} />
       </div>
 
       {m.snippet && (
