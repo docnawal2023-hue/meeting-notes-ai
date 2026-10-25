@@ -3,6 +3,7 @@ const Meeting = require("../models/Metting");
 const ActionItem = require("../models/ActionItem");
 const auth = require("../middleware/auth");
 const validateId = require("../middleware/validateId");
+const { sendTaskEmail } = require("../services/emailer");
 const { processMeeting } = require("../services/pipeline");
 const {
   cleanString,
@@ -171,6 +172,89 @@ router.post("/:id/action-items", validateId, async (req, res, next) => {
     });
 
     res.status(201).json({ actionItem });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/meetings/:id/send-emails
+// Body (optional): { "resend": true }  to email tasks that were already emailed
+router.post("/:id/send-emails", validateId, async (req, res, next) => {
+  try {
+    const meeting = await Meeting.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    }).select("title date status");
+
+    if (!meeting) return res.status(404).json({ message: "Meeting not found" });
+    if (meeting.status !== "done") {
+      return res.status(409).json({ message: "This meeting is not finished processing yet" });
+    }
+
+    const resend = req.body?.resend === true;
+
+    // Only open tasks are emailed. Finished tasks don't need a reminder.
+    const items = await ActionItem.find({
+      meetingId: meeting._id,
+      userId: req.user._id,
+      status: "open",
+    }).sort({ createdAt: 1 });
+
+    const skipped = [];
+    const groups = new Map();
+
+    for (const item of items) {
+      if (!item.ownerEmail) {
+        skipped.push({ task: item.task, reason: "No email address" });
+        continue;
+      }
+      if (item.emailSent && !resend) {
+        skipped.push({ task: item.task, reason: "Already emailed" });
+        continue;
+      }
+      const key = item.ownerEmail.toLowerCase();
+      if (!groups.has(key)) {
+        groups.set(key, { email: key, owner: item.owner, items: [] });
+      }
+      groups.get(key).items.push(item);
+    }
+
+    if (groups.size === 0) {
+      return res.status(400).json({
+        message: "Nothing to send. Add an owner email to at least one open task.",
+        skipped,
+      });
+    }
+    if (groups.size > 20) {
+      return res.status(400).json({ message: "Too many recipients (maximum 20 at once)" });
+    }
+
+    const sent = [];
+    const failed = [];
+
+    // One email per person, sent one after another (fake inboxes limit sending speed)
+    for (const group of groups.values()) {
+      try {
+        await sendTaskEmail({
+          to: group.email,
+          name: group.owner,
+          meeting,
+          items: group.items,
+          sentBy: req.user.name,
+        });
+        await ActionItem.updateMany(
+          { _id: { $in: group.items.map((i) => i._id) } },
+          { emailSent: true }
+        );
+        sent.push({ email: group.email, owner: group.owner, count: group.items.length });
+      } catch (err) {
+        console.error(`Email to ${group.email} failed:`, err.message);
+        failed.push({ email: group.email, error: String(err.message).slice(0, 150) });
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    res.json({ sent, failed, skipped });
   } catch (err) {
     next(err);
   }

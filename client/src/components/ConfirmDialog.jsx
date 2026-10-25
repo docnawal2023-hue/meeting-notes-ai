@@ -4,6 +4,7 @@ export default function ConfirmDialog({
   open,
   title,
   message,
+  children,
   confirmText = "Confirm",
   danger = false,
   busy = false,
@@ -30,11 +31,12 @@ export default function ConfirmDialog({
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+                className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
+                <p className="mt-2 text-sm text-slate-600">{message}</p>
+        {children}
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"

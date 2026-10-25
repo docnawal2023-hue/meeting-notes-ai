@@ -52,6 +52,7 @@ export function formatDuration(seconds) {
   if (minutes < 60) return `${minutes} min`;
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }
+
 // day 11
 // Tailwind needs complete class names, so they are written out in full
 export const SPEAKER_COLORS = [

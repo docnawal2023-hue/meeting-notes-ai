@@ -6,6 +6,7 @@ import StatusBadge from "../components/StautusBadge";
 import TranscriptView from "../components/TranscriptView";
 import ActionItemsPanel from "../components/ActionItemPanel";
 import { formatDuration, formatMeetingDate } from "../utils/helper";
+import SendEmailSection from "../components/SendEmailSection";
 
 const ACTIVE = ["uploaded", "transcribing", "analyzing"];
 
@@ -115,6 +116,11 @@ export default function MeetingDetail() {
           </section>
 
           <ActionItemsPanel
+            meetingId={meeting._id}
+            items={items}
+            onChanged={() => load({ silent: true })}
+          />
+                    <SendEmailSection
             meetingId={meeting._id}
             items={items}
             onChanged={() => load({ silent: true })}
