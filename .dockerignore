@@ -1,6 +1,0 @@
-client
-.git
-**/node_modules
-**/.env
-server/uploads
-server/samples
