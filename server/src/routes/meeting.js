@@ -57,7 +57,7 @@ router.post(
         userId: req.user._id,
         title,
         date,
-        audioPath: req.file.buffer,
+        audioData: req.file.buffer,
         originalFileName: req.file.originalname,
       });
 
