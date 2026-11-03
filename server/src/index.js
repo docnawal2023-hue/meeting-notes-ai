@@ -8,7 +8,7 @@ const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json());
-
+app.get("/", (req, res) => res.send("API is running..."));
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/meetings", require("./routes/meeting"));
