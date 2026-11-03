@@ -20,7 +20,7 @@ const meetingSchema = new mongoose.Schema(
     },
     title: { type: String, required: true, trim: true },
     date: { type: Date, default: Date.now }, // meeting date, used for "next Friday"
-    audioPath:string,
+    audioPath:String,
        audioData: { type: Buffer, select: false },
     originalFileName: String,
     duration: Number,
