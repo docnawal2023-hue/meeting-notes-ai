@@ -1,26 +1,19 @@
 const fs = require("fs/promises");
+const os = require("os");
+const path = require("path");
 const Meeting = require("../models/Metting");
 const ActionItem = require("../models/ActionItem");
 const { transcribeAudio } = require("./transcriber");
 const { analyzeTranscript } = require("./analyzer");
 
-async function fileExists(p) {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function processMeeting(meetingId) {
-  const meeting = await Meeting.findById(meetingId);
+  const meeting = await Meeting.findById(meetingId).select("+audioData");
   if (!meeting) return;
 
   try {
     // ---------- Step 1: transcription (skipped if already done) ----------
     if (!meeting.transcript || meeting.transcript.length === 0) {
-      if (!meeting.audioPath || !(await fileExists(meeting.audioPath))) {
+      if (!meeting.audioData || meeting.audioData.length === 0) {
         throw new Error("The audio file is no longer available. Please upload it again.");
       }
 
@@ -28,18 +21,25 @@ async function processMeeting(meetingId) {
       meeting.errorMessage = undefined;
       await meeting.save();
 
-      const result = await transcribeAudio(meeting.audioPath);
+      // transcribeAudio expects a path, so write the buffer to /tmp
+      const ext = path.extname(meeting.originalFileName || "") || ".webm";
+      const tmpPath = path.join(os.tmpdir(), `${meeting._id}${ext}`);
+      await fs.writeFile(tmpPath, meeting.audioData);
+
+      let result;
+      try {
+        result = await transcribeAudio(tmpPath);
+      } finally {
+        await fs.unlink(tmpPath).catch(() => {});
+      }
 
       meeting.transcript = result.segments;
       meeting.fullText = result.fullText;
       meeting.duration = result.duration;
-      await meeting.save();
-
-      // Transcript is safely saved, so the audio file is no longer needed
-      await fs.unlink(meeting.audioPath).catch(() => {});
-      meeting.audioPath = undefined;
+      meeting.audioData = undefined;   // transcript saved, audio no longer needed
       await meeting.save();
     }
+
 
     // ---------- Step 2: analysis ----------
     meeting.status = "analyzing";

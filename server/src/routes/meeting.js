@@ -62,9 +62,10 @@ router.post(
       });
 
       // Start in the background. Do NOT await, so the user gets a reply now.
-      processMeeting(meeting._id).catch((err) =>
-        console.error("Pipeline crashed:", err)
-      );
+      // Vercel kills background work after the response, so wait for it
+await processMeeting(meeting._id);
+const saved = await Meeting.findById(meeting._id);
+res.status(201).json({ meeting: saved });
 
       res.status(202).json({ meeting });
     } catch (err) {
@@ -113,7 +114,8 @@ router.get("/", async (req, res, next) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
 
     // fullText is only needed to build search snippets
-    const hidden = q ? "-transcript -audioPath" : "-transcript -fullText -audioPath";
+       // in router.get("/")
+const hidden = q ? "-transcript -audioData" : "-transcript -fullText -audioData";
 
     const [meetings, total] = await Promise.all([
       Meeting.find(filter)
