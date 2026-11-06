@@ -1,4 +1,5 @@
 # MeetingNotes AI: Meeting Notes and Action-Item Generator
+live link https://meetingminutesai.netlify.app/
 
 Upload a meeting recording, or record one in your browser, and get a **speaker-labeled transcript, a summary, decisions, and action items with owners and deadlines**. Send the action items to each person by email, and search your whole meeting archive later.
 
