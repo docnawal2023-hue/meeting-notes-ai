@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import api, { getErrorMessage } from "../api";
-import Spinner from "../components/Spinner";
 import StautusBadge from "../components/StautusBadge";
 import ConfirmDialog from "../components/ConfirmDialog";
 import useDebounce from "../hooks/useDebounce";
@@ -19,6 +18,31 @@ const FILTERS = [
   { value: "analyzing", label: "Analyzing" },
   { value: "uploaded", label: "Queued" },
 ];
+
+function MeetingSkeleton() {
+  return (
+    <div role="status" aria-label="Loading meetings" className="space-y-3">
+      <span className="sr-only">Loading meetings…</span>
+      {Array.from({ length: 3 }, (_, index) => (
+        <div
+          key={index}
+          aria-hidden="true"
+          className="animate-pulse rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="w-full max-w-sm space-y-2">
+              <div className="h-4 w-2/3 rounded bg-slate-200" />
+              <div className="h-3 w-1/3 rounded bg-slate-100" />
+            </div>
+            <div className="h-6 w-20 rounded-full bg-slate-100" />
+          </div>
+          <div className="mt-4 h-3 w-full rounded bg-slate-100" />
+          <div className="mt-2 h-3 w-3/4 rounded bg-slate-100" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function MeetingRow({ m, busy, onRetry, onDelete }) {
   const processing = ACTIVE.includes(m.status);
@@ -196,7 +220,7 @@ export default function Dashboard() {
   const filtering = Boolean(search.trim() || status);
 
   return (
-    <div>
+    <div aria-busy={loading}>
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Meetings</h1>
@@ -238,7 +262,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {loading && <Spinner />}
+      {loading && <MeetingSkeleton />}
 
       {!loading && error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">

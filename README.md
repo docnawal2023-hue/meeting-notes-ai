@@ -144,6 +144,15 @@ npm run dev
 
 Open **http://localhost:5173**, register an account, and upload or record a short meeting.
 
+## Tests
+
+Run the frontend unit tests and backend API integration test from their respective folders:
+
+```bash
+cd client && npm test
+cd ../server && npm test
+```
+
 ## API overview
 
 All routes except `/api/auth/register`, `/api/auth/login` and `/api/health` require the header `Authorization: Bearer <token>`.
